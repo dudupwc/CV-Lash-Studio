@@ -365,7 +365,7 @@
     <div class="admin-login">
       <div style="font-size:2.5rem;margin-bottom:0.75rem;">💅</div>
       <h2>Área Administrativa</h2>
-      <p>Acesse com e-mail e senha cadastrados no Supabase</p>
+      <p>Acesse com e-mail e senha cadastrados</p>
       <div class="form-group">
         <label>E-mail</label>
         <input type="email" id="admin-email" placeholder="admin@lashstudio.com">
@@ -404,7 +404,7 @@
       <div class="admin-grid" id="stats-grid"></div>
       <div style="background:var(--white);border-radius:14px;padding:1.5rem;box-shadow:var(--shadow);">
         <div style="font-weight:600;margin-bottom:0.25rem;">Receita — últimos 7 dias</div>
-        <div style="font-size:0.8rem;color:var(--gray);margin-bottom:0.5rem;">Seu horário foi reservado com sucesso! 💅 Em breve entraremos em contato para confirmação.</div>
+        <div style="font-size:0.8rem;color:var(--gray);margin-bottom:0.5rem;">Agendamentos concluídos</div>
         <div class="chart-bars" id="revenue-chart"></div>
       </div>
     </div>
@@ -627,14 +627,28 @@ function minutesToTime(minutes) {
 function isWeekday(dateString) {
   const date = new Date(dateString + 'T12:00:00');
   const day = date.getDay();
-  return day >= 1 && day <= 5;
-}
+  return day !== 0; // bloqueia só domingo
+ }
 
-function serviceFitsBusinessHours(startTime, duration) {
-  const businessStart = timeToMinutes('13:00');
-  const businessEnd = timeToMinutes('19:00');
+function serviceFitsBusinessHours(dateString, startTime, duration) {
+  const date = new Date(dateString + 'T12:00:00');
+  const day = date.getDay();
+
+  let businessStart, businessEnd;
+
+  if (day === 6) {
+    // sábado
+    businessStart = timeToMinutes('10:00');
+    businessEnd = timeToMinutes('15:00');
+  } else {
+    // segunda a sexta
+    businessStart = timeToMinutes('13:00');
+    businessEnd = timeToMinutes('19:00');
+  }
+
   const start = timeToMinutes(startTime);
   const end = start + Number(duration || 0);
+
   return start >= businessStart && end <= businessEnd;
 }
 
@@ -698,7 +712,7 @@ async function populateTimes() {
 
   for (let minutes = startMinutes; minutes <= endMinutes; minutes += 30) {
     const time = minutesToTime(minutes);
-    const fits = serviceFitsBusinessHours(time, svc.duration);
+    const fits = serviceFitsBusinessHours(date, time, svc.duration);
     if (!fits) continue;
 
     const conflict = busyAppointments.some(a => timesOverlap(time, svc.duration, a.time, a.service_duration));
@@ -735,7 +749,7 @@ async function submitBooking() {
   if (!svc) { showToast('Serviço inválido', 'error'); return; }
 
   if (!isWeekday(date)) { showToast('Atendimento somente de segunda a sexta', 'error'); return; }
-  if (!serviceFitsBusinessHours(time, svc.duration)) { showToast('Escolha um horário entre 13:00 e 19:00 que comporte a duração do serviço', 'error'); return; }
+  if (!serviceFitsBusinessHours(date, time, svc.duration)) { showToast('Escolha um horário entre 13:00 e 19:00 que comporte a duração do serviço', 'error'); return; }
 
   const conflict = await hasDurationConflict(date, time, svc.duration);
   if (conflict) { showToast('Este horário conflita com outro agendamento. Escolha outro.', 'error'); return; }
@@ -786,8 +800,8 @@ async function submitBooking() {
   } catch (emailError) {
     console.error('Erro ao enviar email:', emailError);
   }
-
-  document.getElementById('success-msg').textContent =
+  
+  document.getElementById('success-msg').textContent = `Seu horário foi reservado com sucesso! 💅 Em breve entraremos em contato para confirmação.`;
     `${svc.name} confirmado para ${formatDate(date)} às ${time}. Até lá! 💅`;
   document.getElementById('success-modal').style.display = 'flex';
 
