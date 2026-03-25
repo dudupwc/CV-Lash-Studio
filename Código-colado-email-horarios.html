@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lash Studio — Agendamentos</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<!-- ✅ Supabase JS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+<style>
+  :root {
+    --cream: #FAF6F1;
+    --rose: #C4856A;
+    --rose-light: #E8C4B4;
+    --rose-dark: #9B5F49;
+    --mocha: #3D2B1F;
+    --mocha-light: #6B4C3B;
+    --gold: #C9A84C;
+    --gold-light: #F0DCAA;
+    --white: #FFFFFF;
+    --gray: #8A7B74;
+    --gray-light: #EDE8E4;
+    --success: #6B9E7A;
+    --danger: #C4685A;
+    --shadow: 0 8px 32px rgba(61,43,31,0.12);
+    --shadow-lg: 0 20px 60px rgba(61,43,31,0.18);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--mocha);
+    min-height: 100vh;
+  }
+
+  /* NAV */
+  nav {
+    background: var(--mocha);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+  }
+
+  .nav-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    color: var(--gold-light);
+    letter-spacing: 0.5px;
+  }
+  .nav-logo span { color: var(--rose-light); font-style: italic; }
+
+  .nav-tabs { display: flex; gap: 0.25rem; }
+  .nav-tab {
+    background: none; border: none;
+    color: var(--gray);
+    padding: 0.5rem 1rem; border-radius: 6px;
+    cursor: pointer; font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem; font-weight: 500; transition: all 0.2s;
+  }
+  .nav-tab:hover { color: var(--cream); background: rgba(255,255,255,0.08); }
+  .nav-tab.active { color: var(--gold-light); background: rgba(201,168,76,0.15); }
+
+  .nav-admin-btn {
+    background: none; border: 1px solid rgba(201,168,76,0.4);
+    color: var(--gold-light); padding: 0.4rem 1rem; border-radius: 6px;
+    cursor: pointer; font-size: 0.8rem; font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+  }
+  .nav-admin-btn:hover { background: rgba(201,168,76,0.15); }
+
+  /* PAGES */
+  .page { display: none; animation: fadeIn 0.3s ease; }
+  .page.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* HERO */
+  .hero {
+    background: linear-gradient(135deg, var(--mocha) 0%, var(--mocha-light) 100%);
+    padding: 5rem 2rem 4rem; text-align: center;
+    position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 70% 50%, rgba(196,133,106,0.2) 0%, transparent 60%);
+  }
+  .hero-eyebrow { font-size: 0.75rem; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); margin-bottom: 1rem; position: relative; }
+  .hero h1 { font-family: 'Playfair Display', serif; font-size: clamp(2.5rem, 5vw, 4rem); color: var(--cream); line-height: 1.15; margin-bottom: 1rem; position: relative; }
+  .hero h1 em { color: var(--rose-light); font-style: italic; }
+  .hero p { color: rgba(250,246,241,0.65); font-size: 1rem; max-width: 480px; margin: 0 auto 2.5rem; line-height: 1.7; position: relative; }
+  .hero-btn { background: var(--rose); color: var(--white); border: none; padding: 0.9rem 2.5rem; border-radius: 50px; font-size: 0.95rem; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.25s; position: relative; box-shadow: 0 4px 20px rgba(196,133,106,0.4); }
+  .hero-btn:hover { background: var(--rose-dark); transform: translateY(-2px); }
+
+  /* SERVICES GRID */
+  .section { padding: 3rem 2rem; max-width: 1100px; margin: 0 auto; }
+  .section-title { font-family: 'Playfair Display', serif; font-size: 1.8rem; color: var(--mocha); margin-bottom: 0.4rem; }
+  .section-sub { color: var(--gray); font-size: 0.9rem; margin-bottom: 2rem; }
+  .services-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem; }
+
+  .service-card {
+    background: var(--white); border-radius: 16px; padding: 1.5rem;
+    box-shadow: var(--shadow); border: 1px solid var(--gray-light);
+    cursor: pointer; transition: all 0.25s; position: relative; overflow: hidden;
+  }
+  .service-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--rose), var(--gold)); transform: scaleX(0); transform-origin: left; transition: transform 0.3s; }
+  .service-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+  .service-card:hover::before { transform: scaleX(1); }
+  .service-card.selected { border-color: var(--rose); background: #FDF6F3; }
+  .service-card.selected::before { transform: scaleX(1); }
+  .service-emoji { font-size: 2rem; margin-bottom: 0.75rem; }
+  .service-name { font-weight: 600; font-size: 1rem; margin-bottom: 0.25rem; }
+  .service-desc { color: var(--gray); font-size: 0.82rem; line-height: 1.5; margin-bottom: 1rem; }
+  .service-footer { display: flex; justify-content: space-between; align-items: center; }
+  .service-price { font-weight: 700; font-size: 1.1rem; color: var(--rose-dark); }
+  .service-duration { font-size: 0.78rem; color: var(--gray); background: var(--gray-light); padding: 0.2rem 0.6rem; border-radius: 20px; }
+
+  /* BOOKING FORM */
+  .booking-section { background: var(--white); border-radius: 20px; padding: 2.5rem; box-shadow: var(--shadow); max-width: 600px; margin: 0 auto; }
+  .form-title { font-family: 'Playfair Display', serif; font-size: 1.5rem; margin-bottom: 1.75rem; color: var(--mocha); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .form-group { margin-bottom: 1.25rem; }
+  .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--mocha-light); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 0.75rem 1rem; border: 1.5px solid var(--gray-light); border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; color: var(--mocha); background: var(--cream); outline: none; transition: border-color 0.2s; }
+  .form-group input:focus, .form-group select:focus { border-color: var(--rose); background: var(--white); }
+
+  .selected-service-badge { background: linear-gradient(135deg, #FDF0EA, #FAF6F1); border: 1px solid var(--rose-light); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+  .badge-name { font-weight: 600; font-size: 0.95rem; }
+  .badge-price { color: var(--rose-dark); font-weight: 700; }
+
+  .btn-primary { width: 100%; background: linear-gradient(135deg, var(--rose), var(--rose-dark)); color: var(--white); border: none; padding: 1rem; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.25s; box-shadow: 0 4px 16px rgba(196,133,106,0.35); }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(196,133,106,0.45); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* MY APPOINTMENTS */
+  .appt-card { background: var(--white); border-radius: 14px; padding: 1.25rem 1.5rem; box-shadow: var(--shadow); border-left: 4px solid var(--rose); margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+  .appt-card.past { border-left-color: var(--gray); opacity: 0.7; }
+  .appt-card.today { border-left-color: var(--gold); }
+  .appt-info h4 { font-weight: 600; margin-bottom: 0.2rem; }
+  .appt-info p { font-size: 0.83rem; color: var(--gray); }
+  .appt-badge { font-size: 0.75rem; font-weight: 600; padding: 0.3rem 0.8rem; border-radius: 20px; white-space: nowrap; }
+  .appt-badge.upcoming { background: #E8F4EC; color: var(--success); }
+  .appt-badge.today-b { background: #FDF5E0; color: #9B7A1A; }
+  .appt-badge.past-b { background: var(--gray-light); color: var(--gray); }
+  .appt-price { font-weight: 700; color: var(--rose-dark); font-size: 0.95rem; }
+
+  /* ADMIN */
+  .admin-login { max-width: 380px; margin: 4rem auto; background: var(--white); border-radius: 20px; padding: 2.5rem; box-shadow: var(--shadow-lg); text-align: center; }
+  .admin-login h2 { font-family: 'Playfair Display', serif; margin-bottom: 0.5rem; }
+  .admin-login p { color: var(--gray); font-size: 0.85rem; margin-bottom: 2rem; }
+
+  .admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
+  .stat-card { background: var(--white); border-radius: 14px; padding: 1.5rem; box-shadow: var(--shadow); }
+  .stat-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--gray); margin-bottom: 0.5rem; }
+  .stat-value { font-size: 1.8rem; font-weight: 700; color: var(--mocha); font-family: 'Playfair Display', serif; }
+  .stat-sub { font-size: 0.8rem; color: var(--gray); margin-top: 0.2rem; }
+  .stat-card.highlight { background: linear-gradient(135deg, var(--mocha), var(--mocha-light)); }
+  .stat-card.highlight .stat-label { color: rgba(250,246,241,0.6); }
+  .stat-card.highlight .stat-value { color: var(--gold-light); }
+  .stat-card.highlight .stat-sub { color: rgba(250,246,241,0.5); }
+
+  /* ADMIN TABLE */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  thead th { text-align: left; padding: 0.75rem 1rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; color: var(--gray); border-bottom: 2px solid var(--gray-light); }
+  tbody tr:hover { background: #FAF6F1; }
+  tbody td { padding: 0.85rem 1rem; border-bottom: 1px solid var(--gray-light); color: var(--mocha); }
+
+  .status-pill { display: inline-block; padding: 0.25rem 0.7rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+  .status-pill.confirmed { background: #E8F4EC; color: var(--success); }
+  .status-pill.pending { background: #FDF5E0; color: #9B7A1A; }
+  .status-pill.done { background: var(--gray-light); color: var(--gray); }
+  .status-pill.canceled { background: #FDECEC; color: var(--danger); }
+
+  /* ADMIN TABS */
+  .admin-tabs { display: flex; gap: 0.25rem; margin-bottom: 2rem; border-bottom: 2px solid var(--gray-light); }
+  .admin-tab { background: none; border: none; padding: 0.6rem 1.25rem; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500; color: var(--gray); border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+  .admin-tab.active { color: var(--rose); border-bottom-color: var(--rose); }
+  .admin-tab:hover { color: var(--mocha); }
+  .admin-content { display: none; }
+  .admin-content.active { display: block; animation: fadeIn 0.2s ease; }
+
+  /* MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(61,43,31,0.55); backdrop-filter: blur(4px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 1rem; animation: fadeIn 0.2s; }
+  .modal { background: var(--white); border-radius: 20px; padding: 2rem; max-width: 480px; width: 100%; box-shadow: var(--shadow-lg); position: relative; animation: slideUp 0.3s ease; }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+  .modal-close { position: absolute; top: 1rem; right: 1rem; background: var(--gray-light); border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1rem; color: var(--gray); display: flex; align-items: center; justify-content: center; }
+  .modal h3 { font-family: 'Playfair Display', serif; font-size: 1.4rem; margin-bottom: 1.5rem; }
+
+  /* TOAST */
+  #toast-container { position: fixed; bottom: 2rem; right: 2rem; z-index: 999; display: flex; flex-direction: column; gap: 0.5rem; }
+  .toast { background: var(--mocha); color: var(--cream); padding: 0.85rem 1.25rem; border-radius: 12px; font-size: 0.88rem; box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 0.75rem; animation: slideUp 0.3s ease; max-width: 320px; }
+  .toast.success { background: var(--success); }
+  .toast.error { background: var(--danger); }
+
+  /* NOTIFICATION BANNER */
+  .notif-banner { background: linear-gradient(135deg, var(--mocha), #5A3B2B); color: var(--cream); padding: 0.75rem 1.5rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.75rem; border-bottom: 1px solid rgba(201,168,76,0.3); }
+  .notif-banner span { flex: 1; }
+  .notif-banner button { background: none; border: 1px solid rgba(250,246,241,0.4); color: var(--cream); padding: 0.25rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 0.78rem; font-family: 'DM Sans', sans-serif; }
+
+  /* EMPTY STATE */
+  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--gray); }
+  .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; opacity: 0.5; }
+  .empty-state h4 { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--mocha); margin-bottom: 0.5rem; }
+
+  /* BUTTONS */
+  .btn-sec { background: var(--gray-light); color: var(--mocha); border: none; padding: 0.6rem 1.2rem; border-radius: 8px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500; transition: all 0.2s; }
+  .btn-sec:hover { background: var(--rose-light); }
+  .btn-danger { background: #FDECEC; color: var(--danger); border: none; padding: 0.4rem 0.9rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
+  .btn-danger:hover { background: var(--danger); color: var(--white); }
+  .btn-small { padding: 0.35rem 0.8rem; font-size: 0.78rem; border-radius: 6px; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 500; transition: all 0.2s; }
+  .btn-success { background: #E8F4EC; color: var(--success); }
+  .btn-success:hover { background: var(--success); color: var(--white); }
+
+  /* CHART */
+  .chart-bars { display: flex; align-items: flex-end; gap: 0.5rem; height: 120px; margin-top: 1rem; }
+  .bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
+  .bar { width: 100%; background: linear-gradient(180deg, var(--rose), var(--rose-dark)); border-radius: 4px 4px 0 0; transition: height 0.5s ease; min-height: 4px; }
+  .bar-label { font-size: 0.65rem; color: var(--gray); text-align: center; }
+  .bar-val { font-size: 0.7rem; font-weight: 600; color: var(--mocha); }
+
+  /* LOADING SPINNER */
+  .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 0.5rem; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* CONFIG BANNER */
+  .config-banner { background: #FDF5E0; border: 1px solid #E8CC7A; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; font-size: 0.85rem; color: #6B5000; display: flex; gap: 0.75rem; align-items: flex-start; }
+  .config-banner strong { display: block; margin-bottom: 0.3rem; }
+
+  @media (max-width: 640px) {
+    .form-row { grid-template-columns: 1fr; }
+    .booking-section { padding: 1.5rem; }
+    nav { padding: 0 1rem; }
+    .hero { padding: 3rem 1.5rem 2.5rem; }
+    .section { padding: 2rem 1rem; }
+    .nav-tabs { gap: 0; }
+    .nav-tab { padding: 0.5rem 0.6rem; font-size: 0.78rem; }
+  }
+</style>
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<div id="notif-banner" class="notif-banner" style="display:none;">
+  <span>🔔</span>
+  <span id="notif-text"></span>
+  <button onclick="document.getElementById('notif-banner').style.display='none'">Fechar</button>
+</div>
+
+<nav>
+  <div class="nav-logo">Lash <span>Studio</span></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('home')">Início</button>
+    <button class="nav-tab" onclick="showPage('booking')">Agendar</button>
+    <button class="nav-tab" onclick="showPage('myappts')">Meus Agendamentos</button>
+  </div>
+  <button class="nav-admin-btn" onclick="showPage('admin')">⚙ Admin</button>
+</nav>
+
+<!-- ======================== HOME PAGE ======================== -->
+<div id="page-home" class="page active">
+  <div class="hero">
+    <div class="hero-eyebrow">✦ Beleza com precisão</div>
+    <h1>Realce o seu <em>olhar</em><br>com quem entende</h1>
+    <p>Agende seus serviços de cílios com facilidade, receba lembretes e viva a melhor versão de você.</p>
+    <button class="hero-btn" onclick="showPage('booking')">Agendar agora →</button>
+  </div>
+  <div class="section">
+    <div class="section-title">Nossos Serviços</div>
+    <div class="section-sub">Escolha o procedimento ideal para você</div>
+    <div id="home-services-grid" class="services-grid"></div>
+  </div>
+</div>
+
+<!-- ======================== BOOKING PAGE ======================== -->
+<div id="page-booking" class="page">
+  <div class="section">
+    <div class="section-title">Agendar Serviço</div>
+    <div class="section-sub">Escolha o serviço e preencha seus dados</div>
+
+    <div id="step-service" style="margin-bottom:2rem;">
+      <div id="booking-services-grid" class="services-grid"></div>
+    </div>
+
+    <div class="booking-section">
+      <h3 class="form-title">Seus dados</h3>
+
+      <div id="selected-service-badge" class="selected-service-badge" style="display:none;">
+        <div>
+          <div class="badge-name" id="badge-name">—</div>
+          <div style="font-size:0.8rem;color:var(--gray)" id="badge-duration">—</div>
+        </div>
+        <div class="badge-price" id="badge-price">—</div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nome completo *</label>
+          <input type="text" id="f-name" placeholder="Maria Silva">
+        </div>
+        <div class="form-group">
+          <label>Telefone *</label>
+          <input type="tel" id="f-phone" placeholder="(21) 99999-0000">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>E-mail *</label>
+        <input type="email" id="f-email" placeholder="maria@email.com">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Data *</label>
+          <input type="date" id="f-date">
+        </div>
+        <div class="form-group">
+          <label>Horário *</label>
+          <select id="f-time">
+            <option value="">Selecione</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Observações</label>
+        <input type="text" id="f-notes" placeholder="Alguma alergia, preferência...">
+      </div>
+
+      <button class="btn-primary" id="btn-submit" onclick="submitBooking()">Confirmar Agendamento ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== MY APPOINTMENTS PAGE ======================== -->
+<div id="page-myappts" class="page">
+  <div class="section">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem;">
+      <div>
+        <div class="section-title">Meus Agendamentos</div>
+        <div class="section-sub">Acompanhe seus procedimentos</div>
+      </div>
+      <div style="display:flex;gap:0.5rem;align-items:center;">
+        <input type="email" id="lookup-email" placeholder="Seu e-mail" style="padding:0.55rem 1rem;border:1.5px solid var(--gray-light);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.85rem;outline:none;">
+        <button class="btn-sec" onclick="lookupAppointments()">Buscar</button>
+      </div>
+    </div>
+    <div id="my-appts-list"></div>
+  </div>
+</div>
+
+<!-- ======================== ADMIN PAGE ======================== -->
+<div id="page-admin" class="page">
+  <!-- LOGIN -->
+  <div id="admin-login-wrap" class="section">
+    <div class="admin-login">
+      <div style="font-size:2.5rem;margin-bottom:0.75rem;">💅</div>
+      <h2>Área Administrativa</h2>
+      <p>Acesse com e-mail e senha cadastrados no Supabase</p>
+      <div class="form-group">
+        <label>E-mail</label>
+        <input type="email" id="admin-email" placeholder="admin@lashstudio.com">
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        <input type="password" id="admin-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')adminLogin()">
+      </div>
+      <button class="btn-primary" id="btn-login" onclick="adminLogin()">Entrar</button>
+      <p style="margin-top:1rem;font-size:0.75rem;color:var(--gray);">Crie o usuário em: Supabase → Authentication → Users</p>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="admin-dashboard" class="section" style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;flex-wrap:wrap;gap:1rem;">
+      <div>
+        <div class="section-title">Painel Administrativo</div>
+        <div class="section-sub" id="admin-date-label"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.75rem;">
+        <span style="font-size:0.8rem;color:var(--gray);" id="admin-user-email"></span>
+        <button class="btn-sec" onclick="adminLogout()">Sair</button>
+      </div>
+    </div>
+
+    <div class="admin-tabs">
+      <button class="admin-tab active" onclick="switchAdminTab('overview')">Visão Geral</button>
+      <button class="admin-tab" onclick="switchAdminTab('agenda')">Agenda</button>
+      <button class="admin-tab" onclick="switchAdminTab('services')">Serviços</button>
+      <button class="admin-tab" onclick="switchAdminTab('finance')">Financeiro</button>
+    </div>
+
+    <!-- OVERVIEW -->
+    <div id="atab-overview" class="admin-content active">
+      <div class="admin-grid" id="stats-grid"></div>
+      <div style="background:var(--white);border-radius:14px;padding:1.5rem;box-shadow:var(--shadow);">
+        <div style="font-weight:600;margin-bottom:0.25rem;">Receita — últimos 7 dias</div>
+        <div style="font-size:0.8rem;color:var(--gray);margin-bottom:0.5rem;">Agendamentos concluídos</div>
+        <div class="chart-bars" id="revenue-chart"></div>
+      </div>
+    </div>
+
+    <!-- AGENDA -->
+    <div id="atab-agenda" class="admin-content">
+      <div style="display:flex;gap:0.75rem;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;">
+        <input type="date" id="admin-filter-date" onchange="renderAdminAgenda()" style="padding:0.55rem 1rem;border:1.5px solid var(--gray-light);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.85rem;outline:none;">
+        <select id="admin-filter-status" onchange="renderAdminAgenda()" style="padding:0.55rem 1rem;border:1.5px solid var(--gray-light);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.85rem;outline:none;background:var(--cream);">
+          <option value="">Todos os status</option>
+          <option value="confirmed">Confirmado</option>
+          <option value="pending">Pendente</option>
+          <option value="done">Concluído</option>
+          <option value="canceled">Cancelado</option>
+        </select>
+        <div id="agenda-count" style="font-size:0.85rem;color:var(--gray);"></div>
+      </div>
+      <div style="background:var(--white);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Cliente</th><th>Serviço</th><th>Data & Hora</th><th>Valor</th><th>Status</th><th>Ações</th></tr>
+            </thead>
+            <tbody id="agenda-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SERVICES MGMT -->
+    <div id="atab-services" class="admin-content">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+        <div style="font-weight:600;">Serviços cadastrados</div>
+        <button class="btn-primary" style="width:auto;padding:0.6rem 1.4rem;" onclick="openServiceModal()">+ Novo Serviço</button>
+      </div>
+      <div style="background:var(--white);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Nome</th><th>Descrição</th><th>Duração</th><th>Preço</th><th>Ações</th></tr>
+            </thead>
+            <tbody id="services-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- FINANCE -->
+    <div id="atab-finance" class="admin-content">
+      <div class="admin-grid" id="finance-stats"></div>
+      <div style="background:var(--white);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;margin-top:1.5rem;">
+        <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--gray-light);font-weight:600;">Histórico de Pagamentos</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Data</th><th>Cliente</th><th>Serviço</th><th>Valor</th><th>Status</th></tr>
+            </thead>
+            <tbody id="finance-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SERVICE MODAL -->
+<div id="service-modal" class="modal-overlay" style="display:none;">
+  <div class="modal">
+    <button class="modal-close" onclick="closeServiceModal()">✕</button>
+    <h3 id="service-modal-title">Novo Serviço</h3>
+    <div class="form-group">
+      <label>Nome do Serviço *</label>
+      <input type="text" id="sm-name" placeholder="Ex: Lash Lifting">
+    </div>
+    <div class="form-group">
+      <label>Descrição</label>
+      <input type="text" id="sm-desc" placeholder="Breve descrição do procedimento">
+    </div>
+    <div class="form-group">
+      <label>Emoji / Ícone</label>
+      <input type="text" id="sm-emoji" placeholder="✨" maxlength="2">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Duração (min) *</label>
+        <input type="number" id="sm-duration" placeholder="60">
+      </div>
+      <div class="form-group">
+        <label>Preço (R$) *</label>
+        <input type="number" id="sm-price" placeholder="150">
+      </div>
+    </div>
+    <button class="btn-primary" id="btn-save-service" onclick="saveService()">Salvar Serviço</button>
+  </div>
+</div>
+
+<!-- SUCCESS MODAL -->
+<div id="success-modal" class="modal-overlay" style="display:none;">
+  <div class="modal" style="text-align:center;">
+    <div style="font-size:3.5rem;margin-bottom:1rem;">🎉</div>
+    <h3 style="margin-bottom:0.5rem;">Agendamento Confirmado!</h3>
+    <p style="color:var(--gray);font-size:0.9rem;margin-bottom:1.5rem;" id="success-msg"></p>
+    <button class="btn-primary" onclick="closeSuccessModal()">Perfeito!</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// ⚙️  CONFIGURAÇÃO SUPABASE
+// Substitua pelos valores do seu projeto em:
+// https://supabase.com/dashboard → Settings → API
+// ============================================================
+const SUPABASE_URL = 'https://gmisdbwgzulchpsyifsv.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_zpctfUBL1J6zQnn1P26hTw_r0jgTPOi';
+
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+emailjs.init("S5aLG-H2Ca8QO33muF");
+
+const EMAILJS_SERVICE_ID = "service_xid1yf7";
+const EMAILJS_TEMPLATE_ID = "template_4e9bnzo";
+
+// ============================================================
+// STATE
+// ============================================================
+let selectedServiceId = null;
+let editingServiceId  = null;
+let cachedServices    = [];
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  const tabMap = { home: 0, booking: 1, myappts: 2 };
+  if (tabMap[id] !== undefined) document.querySelectorAll('.nav-tab')[tabMap[id]].classList.add('active');
+
+  if (id === 'home')    renderHomeServices();
+  if (id === 'booking') { renderBookingServices(); setMinDate(); populateTimes(); }
+  if (id === 'myappts') renderMyAppts();
+  if (id === 'admin')   renderAdmin();
+}
+
+// ============================================================
+// SERVICES — Supabase
+// ============================================================
+async function loadServices() {
+  const { data, error } = await db.from('services').select('*').eq('active', true).order('created_at');
+  if (error) { console.error(error); return []; }
+  cachedServices = data || [];
+  return cachedServices;
+}
+
+function serviceCardHTML(s, clickable, selected) {
+  return `<div class="service-card${selected ? ' selected' : ''}" onclick="${clickable ? `selectService('${s.id}')` : ''}">
+    <div class="service-emoji">${s.emoji || '💅'}</div>
+    <div class="service-name">${s.name}</div>
+    <div class="service-desc">${s.description || ''}</div>
+    <div class="service-footer">
+      <div class="service-price">R$ ${Number(s.price).toFixed(2).replace('.', ',')}</div>
+      <div class="service-duration">${s.duration} min</div>
+    </div>
+  </div>`;
+}
+
+async function renderHomeServices() {
+  const g = document.getElementById('home-services-grid');
+  g.innerHTML = '<div style="color:var(--gray);font-size:0.9rem;padding:1rem;">Carregando serviços...</div>';
+  const svcs = await loadServices();
+  g.innerHTML = svcs.map(s => serviceCardHTML(s, false, false)).join('');
+}
+
+async function renderBookingServices() {
+  const g = document.getElementById('booking-services-grid');
+  if (cachedServices.length === 0) await loadServices();
+  g.innerHTML = cachedServices.map(s => serviceCardHTML(s, true, s.id === selectedServiceId)).join('');
+  updateBadge();
+}
+
+function selectService(id) {
+  selectedServiceId = id;
+  renderBookingServices();
+  populateTimes();
+}
+
+function updateBadge() {
+  const badge = document.getElementById('selected-service-badge');
+  if (!selectedServiceId) { badge.style.display = 'none'; return; }
+  const s = cachedServices.find(x => x.id === selectedServiceId);
+  if (!s) return;
+  badge.style.display = 'flex';
+  document.getElementById('badge-name').textContent = s.name;
+  document.getElementById('badge-duration').textContent = s.duration + ' minutos';
+  document.getElementById('badge-price').textContent = 'R$ ' + Number(s.price).toFixed(2).replace('.', ',');
+}
+
+// ============================================================
+// BOOKING — Supabase
+// ============================================================
+function setMinDate() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('f-date').min = today;
+  if (!document.getElementById('f-date').value) document.getElementById('f-date').value = today;
+}
+
+function timeToMinutes(time) {
+  const [h, m] = time.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function minutesToTime(minutes) {
+  const h = String(Math.floor(minutes / 60)).padStart(2, '0');
+  const m = String(minutes % 60).padStart(2, '0');
+  return `${h}:${m}`;
+}
+
+function isWeekday(dateString) {
+  const date = new Date(dateString + 'T12:00:00');
+  const day = date.getDay();
+  return day >= 1 && day <= 5;
+}
+
+function serviceFitsBusinessHours(startTime, duration) {
+  const businessStart = timeToMinutes('13:00');
+  const businessEnd = timeToMinutes('19:00');
+  const start = timeToMinutes(startTime);
+  const end = start + Number(duration || 0);
+  return start >= businessStart && end <= businessEnd;
+}
+
+function timesOverlap(startA, durationA, startB, durationB) {
+  const aStart = timeToMinutes(startA);
+  const aEnd = aStart + Number(durationA || 0);
+  const bStart = timeToMinutes(startB);
+  const bEnd = bStart + Number(durationB || 0);
+  return aStart < bEnd && bStart < aEnd;
+}
+
+async function getBusyAppointments(date) {
+  const { data, error } = await db
+    .from('appointments')
+    .select('time, service_duration, status')
+    .eq('date', date)
+    .neq('status', 'canceled');
+
+  if (error) {
+    console.error(error);
+    return [];
+  }
+
+  return data || [];
+}
+
+async function hasDurationConflict(date, time, duration) {
+  const existing = await getBusyAppointments(date);
+  return existing.some(a => timesOverlap(time, duration, a.time, a.service_duration));
+}
+
+async function populateTimes() {
+  const sel = document.getElementById('f-time');
+  const currentValue = sel.value;
+  sel.innerHTML = '<option value="">Selecione</option>';
+
+  const date = document.getElementById('f-date').value;
+  const svc = cachedServices.find(s => s.id === selectedServiceId);
+
+  if (!date) return;
+
+  if (!isWeekday(date)) {
+    const o = document.createElement('option');
+    o.value = '';
+    o.textContent = 'Atendimento somente de segunda a sexta';
+    sel.appendChild(o);
+    return;
+  }
+
+  if (!svc) {
+    const o = document.createElement('option');
+    o.value = '';
+    o.textContent = 'Selecione um serviço primeiro';
+    sel.appendChild(o);
+    return;
+  }
+
+  const startMinutes = timeToMinutes('13:00');
+  const endMinutes = timeToMinutes('19:00');
+  const busyAppointments = await getBusyAppointments(date);
+
+  for (let minutes = startMinutes; minutes <= endMinutes; minutes += 30) {
+    const time = minutesToTime(minutes);
+    const fits = serviceFitsBusinessHours(time, svc.duration);
+    if (!fits) continue;
+
+    const conflict = busyAppointments.some(a => timesOverlap(time, svc.duration, a.time, a.service_duration));
+    if (conflict) continue;
+
+    const o = document.createElement('option');
+    o.value = time;
+    o.textContent = time;
+    if (time === currentValue) o.selected = true;
+    sel.appendChild(o);
+  }
+
+  if (sel.options.length === 1) {
+    const o = document.createElement('option');
+    o.value = '';
+    o.textContent = 'Nenhum horário disponível';
+    sel.appendChild(o);
+  }
+}
+
+async function submitBooking() {
+  const name  = document.getElementById('f-name').value.trim();
+  const phone = document.getElementById('f-phone').value.trim();
+  const email = document.getElementById('f-email').value.trim();
+  const date  = document.getElementById('f-date').value;
+  const time  = document.getElementById('f-time').value;
+  const notes = document.getElementById('f-notes').value.trim();
+
+  if (!name || !phone || !email || !date || !time) { showToast('Preencha todos os campos obrigatórios', 'error'); return; }
+  if (!selectedServiceId) { showToast('Selecione um serviço acima', 'error'); return; }
+  if (!/\S+@\S+\.\S+/.test(email)) { showToast('E-mail inválido', 'error'); return; }
+
+  const svc = cachedServices.find(s => s.id === selectedServiceId);
+  if (!svc) { showToast('Serviço inválido', 'error'); return; }
+
+  if (!isWeekday(date)) { showToast('Atendimento somente de segunda a sexta', 'error'); return; }
+  if (!serviceFitsBusinessHours(time, svc.duration)) { showToast('Escolha um horário entre 13:00 e 19:00 que comporte a duração do serviço', 'error'); return; }
+
+  const conflict = await hasDurationConflict(date, time, svc.duration);
+  if (conflict) { showToast('Este horário conflita com outro agendamento. Escolha outro.', 'error'); return; }
+
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Salvando...';
+
+  // Upsert client
+  let clientId = null;
+  const { data: existClient } = await db.from('clients').select('id').eq('email', email).maybeSingle();
+  if (existClient) {
+    clientId = existClient.id;
+    await db.from('clients').update({ name, phone }).eq('id', clientId);
+  } else {
+    const { data: newClient } = await db.from('clients').insert({ name, email, phone }).select('id').single();
+    if (newClient) clientId = newClient.id;
+  }
+
+  const { error } = await db.from('appointments').insert({
+    client_id:        clientId,
+    service_id:       svc.id,
+    client_name:      name,
+    client_email:     email,
+    client_phone:     phone,
+    service_name:     svc.name,
+    service_price:    svc.price,
+    service_duration: svc.duration,
+    date, time, notes,
+    status: 'confirmed'
+  });
+
+  btn.disabled = false;
+  btn.innerHTML = 'Confirmar Agendamento ✓';
+
+  if (error) { showToast('Erro ao salvar. Tente novamente.', 'error'); console.error(error); return; }
+
+  try {
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      name: name,
+      email: email,
+      phone: phone,
+      service: svc.name,
+      date: formatDate(date),
+      time: time,
+      notes: notes || 'Nenhuma'
+    });
+  } catch (emailError) {
+    console.error('Erro ao enviar email:', emailError);
+  }
+
+  document.getElementById('success-msg').textContent =
+    `${svc.name} confirmado para ${formatDate(date)} às ${time}. Até lá! 💅`;
+  document.getElementById('success-modal').style.display = 'flex';
+
+  document.getElementById('f-name').value  = '';
+  document.getElementById('f-phone').value = '';
+  document.getElementById('f-email').value = '';
+  document.getElementById('f-notes').value = '';
+  selectedServiceId = null;
+  renderBookingServices();
+}
+
+function closeSuccessModal() {
+  document.getElementById('success-modal').style.display = 'none';
+  showPage('myappts');
+}
+
+// ============================================================
+// MY APPOINTMENTS — Supabase
+// ============================================================
+async function lookupAppointments() {
+  renderMyAppts();
+}
+
+async function renderMyAppts() {
+  const email = document.getElementById('lookup-email').value.trim().toLowerCase();
+  const list  = document.getElementById('my-appts-list');
+  list.innerHTML = '<div style="color:var(--gray);padding:1rem;">Buscando...</div>';
+
+  let query = db.from('appointments').select('*').order('date', { ascending: false }).order('time');
+  if (email) query = query.eq('client_email', email);
+
+  const { data: appts, error } = await query;
+  if (error) { list.innerHTML = '<div style="color:red;padding:1rem;">Erro ao buscar agendamentos.</div>'; return; }
+  if (!appts || appts.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="icon">📅</div><h4>Nenhum agendamento encontrado</h4><p>Insira seu e-mail para ver seus agendamentos ou faça o primeiro!</p></div>`;
+    return;
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+  list.innerHTML = appts.map(a => {
+    const isToday = a.date === today;
+    const isPast  = a.date < today;
+    let badge = '';
+    if (a.status === 'canceled')       badge = '<span class="appt-badge past-b">Cancelado</span>';
+    else if (a.status === 'done')      badge = '<span class="appt-badge past-b">Concluído</span>';
+    else if (isToday)                  badge = '<span class="appt-badge today-b">Hoje!</span>';
+    else if (isPast)                   badge = '<span class="appt-badge past-b">Passado</span>';
+    else                               badge = '<span class="appt-badge upcoming">Confirmado</span>';
+
+    return `<div class="appt-card${isPast ? ' past' : ''}${isToday ? ' today' : ''}">
+      <div class="appt-info">
+        <h4>${a.service_name}</h4>
+        <p>📅 ${formatDate(a.date)} às ${a.time.slice(0,5)} · ⏱ ${a.service_duration} min · ${a.client_name}</p>
+        ${a.notes ? `<p style="margin-top:0.2rem">📝 ${a.notes}</p>` : ''}
+      </div>
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+        ${badge}
+        <div class="appt-price">R$ ${Number(a.service_price).toFixed(2).replace('.', ',')}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// ADMIN AUTH — Supabase Auth
+// ============================================================
+async function renderAdmin() {
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) {
+    document.getElementById('admin-login-wrap').style.display = 'block';
+    document.getElementById('admin-dashboard').style.display = 'none';
+  } else {
+    document.getElementById('admin-login-wrap').style.display = 'none';
+    document.getElementById('admin-dashboard').style.display = 'block';
+    document.getElementById('admin-user-email').textContent = session.user.email;
+    const today = new Date();
+    document.getElementById('admin-date-label').textContent =
+      today.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    document.getElementById('admin-filter-date').value = today.toISOString().split('T')[0];
+    renderStats();
+    renderAdminAgenda();
+    renderAdminServices();
+    renderFinance();
+  }
+}
+
+async function adminLogin() {
+  const email = document.getElementById('admin-email').value.trim();
+  const pass  = document.getElementById('admin-pass').value;
+  if (!email || !pass) { showToast('Preencha e-mail e senha', 'error'); return; }
+
+  const btn = document.getElementById('btn-login');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Entrando...';
+
+  const { error } = await db.auth.signInWithPassword({ email, password: pass });
+
+  btn.disabled = false;
+  btn.innerHTML = 'Entrar';
+
+  if (error) { showToast('Credenciais inválidas', 'error'); return; }
+  renderAdmin();
+}
+
+async function adminLogout() {
+  await db.auth.signOut();
+  document.getElementById('admin-pass').value  = '';
+  document.getElementById('admin-email').value = '';
+  renderAdmin();
+  showToast('Sessão encerrada');
+}
+
+// ============================================================
+// ADMIN STATS — Supabase
+// ============================================================
+async function renderStats() {
+  const today = new Date().toISOString().split('T')[0];
+  const month = new Date().toISOString().slice(0, 7);
+
+  const { data: appts } = await db.from('appointments').select('date, status, service_price');
+  if (!appts) return;
+
+  const todayAppts  = appts.filter(a => a.date === today && a.status !== 'canceled');
+  const monthAppts  = appts.filter(a => a.date.startsWith(month) && a.status !== 'canceled');
+  const totalRev    = appts.filter(a => a.status === 'done').reduce((s, a) => s + Number(a.service_price), 0);
+  const monthRev    = monthAppts.filter(a => a.status === 'done').reduce((s, a) => s + Number(a.service_price), 0);
+
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card highlight">
+      <div class="stat-label">Hoje</div>
+      <div class="stat-value">${todayAppts.length}</div>
+      <div class="stat-sub">procedimentos agendados</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Este mês</div>
+      <div class="stat-value">${monthAppts.length}</div>
+      <div class="stat-sub">agendamentos</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Receita do mês</div>
+      <div class="stat-value" style="font-size:1.4rem;">R$ ${monthRev.toFixed(2).replace('.', ',')}</div>
+      <div class="stat-sub">procedimentos concluídos</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Receita total</div>
+      <div class="stat-value" style="font-size:1.4rem;">R$ ${totalRev.toFixed(2).replace('.', ',')}</div>
+      <div class="stat-sub">histórico completo</div>
+    </div>
+  `;
+
+  // Revenue chart last 7 days
+  const days = [];
+  for (let i = 6; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); days.push(d.toISOString().split('T')[0]); }
+  const vals = days.map(d => appts.filter(a => a.date === d && a.status === 'done').reduce((s, a) => s + Number(a.service_price), 0));
+  const max  = Math.max(...vals, 1);
+  document.getElementById('revenue-chart').innerHTML = days.map((d, i) => {
+    const pct   = (vals[i] / max) * 100;
+    const label = new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short' });
+    return `<div class="bar-wrap">
+      <div class="bar-val">${vals[i] > 0 ? 'R$' + vals[i] : ''}</div>
+      <div class="bar" style="height:${pct}%"></div>
+      <div class="bar-label">${label}</div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// ADMIN AGENDA — Supabase
+// ============================================================
+async function renderAdminAgenda() {
+  const filterDate   = document.getElementById('admin-filter-date').value;
+  const filterStatus = document.getElementById('admin-filter-status').value;
+  const tbody = document.getElementById('agenda-tbody');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:2rem;">Carregando...</td></tr>';
+
+  let query = db.from('appointments').select('*').order('date').order('time');
+  if (filterDate)   query = query.eq('date', filterDate);
+  if (filterStatus) query = query.eq('status', filterStatus);
+
+  const { data: appts, error } = await query;
+  if (error) { tbody.innerHTML = '<tr><td colspan="6" style="color:red;padding:1rem;">Erro ao carregar.</td></tr>'; return; }
+
+  document.getElementById('agenda-count').textContent = (appts?.length || 0) + ' agendamento(s)';
+
+  if (!appts || appts.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:2rem;">Nenhum agendamento encontrado</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = appts.map(a => `<tr>
+    <td>
+      <div style="font-weight:600;">${a.client_name}</div>
+      <div style="font-size:0.78rem;color:var(--gray);">${a.client_email} · ${a.client_phone}</div>
+    </td>
+    <td>${a.service_name}</td>
+    <td>${formatDate(a.date)} ${a.time.slice(0,5)}</td>
+    <td style="font-weight:600;">R$ ${Number(a.service_price).toFixed(2).replace('.', ',')}</td>
+    <td><span class="status-pill ${a.status}">${statusLabel(a.status)}</span></td>
+    <td>
+      <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+        ${a.status !== 'done' && a.status !== 'canceled' ? `<button class="btn-small btn-success" onclick="changeStatus('${a.id}','done')">✓ Concluir</button>` : ''}
+        ${a.status !== 'canceled' ? `<button class="btn-danger" onclick="changeStatus('${a.id}','canceled')">Cancelar</button>` : ''}
+      </div>
+    </td>
+  </tr>`).join('');
+}
+
+async function changeStatus(id, status) {
+  const { error } = await db.from('appointments').update({ status }).eq('id', id);
+  if (error) { showToast('Erro ao atualizar status', 'error'); return; }
+  renderAdminAgenda();
+  renderStats();
+  renderFinance();
+  showToast(status === 'done' ? 'Marcado como concluído!' : 'Agendamento cancelado', status === 'done' ? 'success' : '');
+}
+
+// ============================================================
+// ADMIN SERVICES — Supabase
+// ============================================================
+async function renderAdminServices() {
+  const tbody = document.getElementById('services-tbody');
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:2rem;">Carregando...</td></tr>';
+  const svcs = await loadServices();
+  tbody.innerHTML = svcs.map(s => `<tr>
+    <td><span style="margin-right:0.5rem;">${s.emoji || '💅'}</span>${s.name}</td>
+    <td style="color:var(--gray);font-size:0.85rem;">${s.description || ''}</td>
+    <td>${s.duration} min</td>
+    <td style="font-weight:600;">R$ ${Number(s.price).toFixed(2).replace('.', ',')}</td>
+    <td>
+      <div style="display:flex;gap:0.4rem;">
+        <button class="btn-sec btn-small" onclick="openServiceModal('${s.id}')">Editar</button>
+        <button class="btn-danger" onclick="deleteService('${s.id}')">Excluir</button>
+      </div>
+    </td>
+  </tr>`).join('');
+}
+
+function openServiceModal(id) {
+  editingServiceId = id || null;
+  const modal = document.getElementById('service-modal');
+  document.getElementById('service-modal-title').textContent = id ? 'Editar Serviço' : 'Novo Serviço';
+  if (id) {
+    const s = cachedServices.find(x => x.id === id);
+    if (s) {
+      document.getElementById('sm-name').value     = s.name;
+      document.getElementById('sm-desc').value     = s.description || '';
+      document.getElementById('sm-emoji').value    = s.emoji || '';
+      document.getElementById('sm-duration').value = s.duration;
+      document.getElementById('sm-price').value    = s.price;
+    }
+  } else {
+    ['sm-name','sm-desc','sm-emoji','sm-duration','sm-price'].forEach(id => document.getElementById(id).value = '');
+  }
+  modal.style.display = 'flex';
+}
+
+function closeServiceModal() {
+  document.getElementById('service-modal').style.display = 'none';
+  editingServiceId = null;
+}
+
+async function saveService() {
+  const name     = document.getElementById('sm-name').value.trim();
+  const desc     = document.getElementById('sm-desc').value.trim();
+  const emoji    = document.getElementById('sm-emoji').value.trim() || '💅';
+  const duration = parseInt(document.getElementById('sm-duration').value);
+  const price    = parseFloat(document.getElementById('sm-price').value);
+
+  if (!name || !duration || !price) { showToast('Preencha os campos obrigatórios', 'error'); return; }
+
+  const btn = document.getElementById('btn-save-service');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Salvando...';
+
+  const payload = { name, description: desc, emoji, duration, price };
+  let error;
+
+  if (editingServiceId) {
+    ({ error } = await db.from('services').update(payload).eq('id', editingServiceId));
+  } else {
+    ({ error } = await db.from('services').insert(payload));
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = 'Salvar Serviço';
+
+  if (error) { showToast('Erro ao salvar serviço', 'error'); console.error(error); return; }
+
+  closeServiceModal();
+  await renderAdminServices();
+  showToast(editingServiceId ? 'Serviço atualizado!' : 'Serviço criado!', 'success');
+}
+
+async function deleteService(id) {
+  if (!confirm('Deseja excluir este serviço?')) return;
+  const { error } = await db.from('services').update({ active: false }).eq('id', id);
+  if (error) { showToast('Erro ao excluir', 'error'); return; }
+  await renderAdminServices();
+  showToast('Serviço removido');
+}
+
+// ============================================================
+// FINANCE — Supabase
+// ============================================================
+async function renderFinance() {
+  const { data: appts } = await db.from('appointments').select('*').order('created_at', { ascending: false });
+  if (!appts) return;
+
+  const done      = appts.filter(a => a.status === 'done');
+  const total     = done.reduce((s, a) => s + Number(a.service_price), 0);
+  const month     = new Date().toISOString().slice(0, 7);
+  const monthDone = done.filter(a => a.date.startsWith(month));
+  const monthTotal = monthDone.reduce((s, a) => s + Number(a.service_price), 0);
+
+  const svcCount = {};
+  done.forEach(a => svcCount[a.service_name] = (svcCount[a.service_name] || 0) + 1);
+  const topSvc = Object.entries(svcCount).sort((a, b) => b[1] - a[1])[0];
+
+  document.getElementById('finance-stats').innerHTML = `
+    <div class="stat-card highlight">
+      <div class="stat-label">Receita Total</div>
+      <div class="stat-value" style="font-size:1.5rem;">R$ ${total.toFixed(2).replace('.', ',')}</div>
+      <div class="stat-sub">${done.length} procedimentos concluídos</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Mês Atual</div>
+      <div class="stat-value" style="font-size:1.5rem;">R$ ${monthTotal.toFixed(2).replace('.', ',')}</div>
+      <div class="stat-sub">${monthDone.length} procedimentos</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Ticket Médio</div>
+      <div class="stat-value" style="font-size:1.5rem;">R$ ${done.length ? (total / done.length).toFixed(2).replace('.', ',') : '0,00'}</div>
+      <div class="stat-sub">por procedimento</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Serviço Top</div>
+      <div class="stat-value" style="font-size:1.1rem;">${topSvc ? topSvc[0] : '—'}</div>
+      <div class="stat-sub">${topSvc ? topSvc[1] + ' realizações' : 'Nenhum ainda'}</div>
+    </div>
+  `;
+
+  const tbody = document.getElementById('finance-tbody');
+  const shown = appts.filter(a => a.status !== 'pending');
+  tbody.innerHTML = shown.map(a => `<tr>
+    <td>${formatDate(a.date)}</td>
+    <td>${a.client_name}</td>
+    <td>${a.service_name}</td>
+    <td style="font-weight:600;">R$ ${Number(a.service_price).toFixed(2).replace('.', ',')}</td>
+    <td><span class="status-pill ${a.status}">${statusLabel(a.status)}</span></td>
+  </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:2rem;">Nenhum registro</td></tr>';
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+function formatDate(d) {
+  const [y, m, day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+
+function statusLabel(s) {
+  return { confirmed: 'Confirmado', pending: 'Pendente', done: 'Concluído', canceled: 'Cancelado' }[s] || s;
+}
+
+function switchAdminTab(tab) {
+  document.querySelectorAll('.admin-tab').forEach((t, i) => {
+    t.classList.toggle('active', ['overview', 'agenda', 'services', 'finance'][i] === tab);
+  });
+  document.querySelectorAll('.admin-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('atab-' + tab).classList.add('active');
+}
+
+function showToast(msg, type) {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = 'toast' + (type ? ' ' + type : '');
+  t.innerHTML = `<span>${type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ'}</span><span>${msg}</span>`;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+document.getElementById('f-date').addEventListener('change', () => {
+  document.getElementById('f-time').value = '';
+  populateTimes();
+});
+
+renderHomeServices();
+
+// Restore admin session on load
+db.auth.getSession().then(({ data: { session } }) => {
+  if (session && document.getElementById('page-admin').classList.contains('active')) {
+    renderAdmin();
+  }
+});
+</script>
+</body>
+</html>
