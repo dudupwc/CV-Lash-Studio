@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lash Studio — Agendamentos</title>
+<title>CV Lash Studio — Agendamentos</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 
 <!-- ✅ Supabase JS SDK -->
@@ -257,7 +257,7 @@
 </div>
 
 <nav>
-  <div class="nav-logo">Lash <span>Studio</span></div>
+  <div class="nav-logo">CV Lash <span>Studio</span></div>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="showPage('home')">Início</button>
     <button class="nav-tab" onclick="showPage('booking')">Agendar</button>
@@ -375,7 +375,7 @@
         <input type="password" id="admin-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')adminLogin()">
       </div>
       <button class="btn-primary" id="btn-login" onclick="adminLogin()">Entrar</button>
-      <p style="margin-top:1rem;font-size:0.75rem;color:var(--gray);">Crie o usuário em: Supabase → Authentication → Users</p>
+      <p style="margin-top:1rem;font-size:0.75rem;color:var(--gray);">Acesso restrito para administradores</p>
     </div>
   </div>
 
@@ -404,7 +404,7 @@
       <div class="admin-grid" id="stats-grid"></div>
       <div style="background:var(--white);border-radius:14px;padding:1.5rem;box-shadow:var(--shadow);">
         <div style="font-weight:600;margin-bottom:0.25rem;">Receita — últimos 7 dias</div>
-        <div style="font-size:0.8rem;color:var(--gray);margin-bottom:0.5rem;">Agendamentos concluídos</div>
+        <div style="font-size:0.8rem;color:var(--gray);margin-bottom:0.5rem;">Seu horário foi reservado com sucesso! 💅 Em breve entraremos em contato para confirmação.</div>
         <div class="chart-bars" id="revenue-chart"></div>
       </div>
     </div>
@@ -1186,5 +1186,34 @@ db.auth.getSession().then(({ data: { session } }) => {
   }
 });
 </script>
+  <a 
+  href="https://wa.me/5527998888330" 
+  target="_blank"
+  style="
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #25D366;
+    color: white;
+    padding: 14px 18px;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: 600;
+    font-family: Arial, sans-serif;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 9999;
+  "
+>
+  WhatsApp
+</a>
+  <footer style="
+  text-align:center;
+  padding:20px;
+  color:#8A7B74;
+  font-size:12px;
+  background:#FAF6F1;
+  border-top:1px solid #EDE8E4;">
+  © 2026 CV Lash Studio — Todos os direitos reservados
+</footer>
 </body>
 </html>
