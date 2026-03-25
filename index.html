@@ -555,7 +555,7 @@ function showPage(id) {
 // SERVICES — Supabase
 // ============================================================
 async function loadServices() {
-  const { data, error } = await db.from('services').select('*').eq('active', true).order('created_at');
+  const { data, error } = await db.from('services').select('*').eq('active', true).order('display_order');
   if (error) { console.error(error); return []; }
   cachedServices = data || [];
   return cachedServices;
